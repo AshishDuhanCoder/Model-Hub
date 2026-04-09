@@ -45,10 +45,21 @@
       <div id="chat-window" class="chat-window hidden">
         <div class="chat-header">
           <div class="chat-header-left">
-            <span class="chat-header-dot"></span>
+            <span class="chat-header-dot" id="chat-key-dot"></span>
             <span class="chat-header-title">AI Assistant</span>
           </div>
-          <button class="chat-new-btn" id="chat-new-btn" title="Clear conversation">+ New Chat</button>
+          <div class="chat-header-actions">
+            <button class="chat-key-btn" id="chat-key-btn" title="Set your API key">🔑 Add Key</button>
+            <button class="chat-new-btn" id="chat-new-btn" title="Clear conversation">+ New Chat</button>
+          </div>
+        </div>
+        <!-- Key input bar (hidden by default) -->
+        <div id="chat-key-bar" class="chat-key-bar hidden">
+          <span class="chat-key-bar-label">API Key</span>
+          <input id="chat-key-input" class="chat-key-input" type="password"
+            placeholder="Enter your API key…" autocomplete="off" spellcheck="false" />
+          <button class="chat-key-save-btn" id="chat-key-save-btn">Save</button>
+          <button class="chat-key-clear-btn" id="chat-key-clear-btn">Remove</button>
         </div>
         <div class="chat-messages" id="chat-messages">
           <div class="chat-welcome" id="chat-welcome">

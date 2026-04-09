@@ -573,8 +573,9 @@ def _extract_json(raw: str) -> dict:
     raise ValueError(f"No valid JSON in response: {raw[:200]}")
 
 
-def _ask_groq(question: str, context_topic: str = "") -> tuple:
+def _ask_groq(question: str, context_topic: str = "", api_key: str = "") -> tuple:
     """Returns (parsed_dict, model_name). Tries each model until one succeeds."""
+    api_key = api_key or _GROQ_KEY
     context_line = (
         f'This is a follow-up about "{context_topic}". '
         if context_topic else ""
@@ -594,7 +595,7 @@ def _ask_groq(question: str, context_topic: str = "") -> tuple:
         try:
             resp = _HTTP.post(
                 _GROQ_URL,
-                headers={"Authorization": f"Bearer {_GROQ_KEY}",
+                headers={"Authorization": f"Bearer {api_key}",
                          "Content-Type": "application/json"},
                 json={
                     "model": model,
@@ -706,10 +707,14 @@ def api_ask():
     is_followup    = bool(context_topic and (len(q.split()) <= 3 or _FOLLOWUP.search(q)))
     resolved_topic = context_topic if is_followup else q
 
+    # ── Resolve API key: user-supplied header takes priority ─
+    active_key = request.headers.get("X-User-Key", "").strip() or _GROQ_KEY
+
     # ── Try Groq first ───────────────────────────────────────
-    if _GROQ_KEY:
+    if active_key:
         try:
-            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "")
+            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "",
+                                         api_key=active_key)
             bullets = data.get("bullets") or []
             if bullets:
                 model_label = used_model.replace("-", " ").title()
@@ -725,7 +730,8 @@ def api_ask():
         except http_requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status == 401:
-                return jsonify({"error": "Invalid Groq API key. Check GROQ_API_KEY in your .env file."}), 503
+                src = "your entered key" if request.headers.get("X-User-Key") else "GROQ_API_KEY in .env"
+                return jsonify({"error": f"Invalid Groq API key ({src}). Please check and re-enter."}), 503
             print(f"[Groq HTTP {status}] falling back to Wikipedia")
             # any other error → fall through to Wikipedia
         except Exception as exc:

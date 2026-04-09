@@ -40,6 +40,68 @@ let currentMode   = 'search';   // 'search' | 'ask'
 let contextTopic  = '';          // last resolved topic for follow-up awareness
 let typingEl      = null;        // current typing indicator node
 
+/* ============================================================
+   API KEY MANAGEMENT  (stored in localStorage, sent as header)
+   ============================================================ */
+const _KEY_STORAGE = 'modelhub_groq_key';
+
+function getUserKey()        { return localStorage.getItem(_KEY_STORAGE) || ''; }
+function setUserKey(k)       { localStorage.setItem(_KEY_STORAGE, k.trim()); _syncKeyUI(); }
+function clearUserKey()      { localStorage.removeItem(_KEY_STORAGE); _syncKeyUI(); }
+
+function _syncKeyUI() {
+  const key     = getUserKey();
+  const keyBtn  = document.getElementById('chat-key-btn');
+  const keyDot  = document.getElementById('chat-key-dot');
+  const keyInput= document.getElementById('chat-key-input');
+  if (key) {
+    if (keyBtn)  { keyBtn.textContent = '🔑 Key Set'; keyBtn.classList.add('key-active'); }
+    if (keyDot)  keyDot.classList.add('key-active');
+    if (keyInput) keyInput.value = key;
+  } else {
+    if (keyBtn)  { keyBtn.textContent = '🔑 Add Key'; keyBtn.classList.remove('key-active'); }
+    if (keyDot)  keyDot.classList.remove('key-active');
+    if (keyInput) keyInput.value = '';
+  }
+}
+
+// Toggle the key bar on header button click
+document.addEventListener('click', e => {
+  if (e.target.id === 'chat-key-btn') {
+    const bar = document.getElementById('chat-key-bar');
+    if (bar) {
+      bar.classList.toggle('hidden');
+      if (!bar.classList.contains('hidden')) {
+        const inp = document.getElementById('chat-key-input');
+        if (inp) { inp.value = getUserKey(); inp.focus(); }
+      }
+    }
+  }
+  if (e.target.id === 'chat-key-save-btn') {
+    const inp = document.getElementById('chat-key-input');
+    const val = inp ? inp.value.trim() : '';
+    if (val) {
+      setUserKey(val);
+      document.getElementById('chat-key-bar').classList.add('hidden');
+    }
+  }
+  if (e.target.id === 'chat-key-clear-btn') {
+    clearUserKey();
+    document.getElementById('chat-key-bar').classList.add('hidden');
+  }
+});
+
+// Save on Enter inside key input
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'chat-key-input') {
+    document.getElementById('chat-key-save-btn')?.click();
+  }
+});
+
+// Sync UI on page load
+document.addEventListener('DOMContentLoaded', _syncKeyUI);
+_syncKeyUI();
+
 /* ── Mode switch ─────────────────────────────────────────── */
 function setMode(mode) {
   currentMode = mode;
@@ -195,7 +257,10 @@ async function submitAsk(q) {
   try {
     const params = new URLSearchParams({ q });
     if (contextTopic) params.set('context_topic', contextTopic);
-    const res  = await fetch(`/api/ask?${params}`);
+    const headers = {};
+    const userKey = getUserKey();
+    if (userKey) headers['X-User-Key'] = userKey;
+    const res  = await fetch(`/api/ask?${params}`, { headers });
     const data = await res.json();
     if (!res.ok || data.error) {
       appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
