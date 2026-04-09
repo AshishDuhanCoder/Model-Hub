@@ -13,7 +13,8 @@ load_dotenv()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 _HTTP = http_requests.Session()
-_HTTP.verify = False  # skip SSL verification for local dev on Windows
+# In production (Vercel), use SSL verification; locally on Windows, skip it
+_HTTP.verify = not os.getenv("VERCEL_ENV")  # Vercel sets VERCEL_ENV in production
 
 app = Flask(__name__)
 
