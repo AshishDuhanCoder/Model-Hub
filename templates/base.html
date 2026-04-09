@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}ModelHub — AI Model Aggregator{% endblock %}</title>
+  <meta name="description" content="30+ frontier AI models in one place. Chat, Image, Video, Audio, Coding, and Embedding models." />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <!-- ── NAVBAR ──────────────────────────────────────────── -->
+  <nav class="navbar" id="navbar">
+    <a href="/" class="nav-logo">ModelHub</a>
+
+    <div class="nav-links">
+      <a href="/chat"      class="nav-link {% if request.path == '/chat' %}active{% endif %}">💬 Chat</a>
+      <a href="/image"     class="nav-link {% if request.path == '/image' %}active{% endif %}">🎨 Image</a>
+      <a href="/video"     class="nav-link {% if request.path == '/video' %}active{% endif %}">🎬 Video</a>
+      <a href="/audio"     class="nav-link {% if request.path == '/audio' %}active{% endif %}">🎵 Audio</a>
+      <a href="/coding"    class="nav-link {% if request.path == '/coding' %}active{% endif %}">⚡ Coding</a>
+      <a href="/embedding" class="nav-link {% if request.path == '/embedding' %}active{% endif %}">🔢 Embedding</a>
+    </div>
+
+    <a href="/pricing" class="nav-cta">Plans</a>
+  </nav>
+
+  <!-- ── MAIN CONTENT ────────────────────────────────────── -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── FOOTER ──────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-logo">ModelHub</div>
+      <p class="footer-text">30+ frontier AI models · One unified interface · Integrate anywhere</p>
+    </div>
+  </footer>
+
+  <!-- ── INTEGRATE MODAL ─────────────────────────────────── -->
+  <div id="integrate-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Integrate Model</h2>
+        <button class="modal-close" id="modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-tabs" role="tablist">
+        <button class="tab-btn active" data-lang="python" role="tab">Python</button>
+        <button class="tab-btn"        data-lang="curl"   role="tab">cURL</button>
+        <button class="tab-btn"        data-lang="js"     role="tab">JavaScript</button>
+      </div>
+
+      <div class="modal-body">
+        <pre class="code-block"><code id="modal-code"></code></pre>
+        <button class="copy-btn" id="copy-btn">Copy</button>
+      </div>
+
+      <div class="modal-footer">
+        <a id="modal-docs-link" class="modal-docs-link" href="#" target="_blank" rel="noopener">
+          View Full Docs →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}ModelHub — What would you like to explore?{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO ─────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-orb orb-purple"></div>
+  <div class="hero-orb orb-blue"></div>
+  <div class="hero-orb orb-pink"></div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">AI Model Aggregator</div>
+    <h1 class="hero-title">
+      What would you like to <span class="gradient-text">explore?</span>
+    </h1>
+    <p class="hero-subtitle">30+ frontier AI models. One unified interface. Integrate anywhere.</p>
+
+    <!-- Search / Ask -->
+    <div class="search-wrapper">
+      <!-- Mode tabs -->
+      <div class="search-mode-tabs">
+        <button class="search-mode-btn active" id="mode-search" data-mode="search">🔍 Search</button>
+        <button class="search-mode-btn"         id="mode-ask"    data-mode="ask">✨ Ask</button>
+      </div>
+
+      <div class="search-bar" role="search" id="search-bar">
+        <span class="search-icon" id="search-bar-icon">🔍</span>
+        <input
+          type="text"
+          id="hero-search"
+          class="search-input"
+          placeholder="Search models, providers, capabilities..."
+          autocomplete="off"
+          aria-label="Search or ask about AI"
+        />
+        <button class="ask-send-btn hidden" id="ask-send-btn" aria-label="Ask">↑</button>
+        <span class="search-kbd" id="search-kbd-hint">⌘K</span>
+      </div>
+
+      <!-- Search dropdown -->
+      <div id="search-dropdown" class="search-dropdown hidden" role="listbox"></div>
+
+      <!-- Chat window (Ask mode) -->
+      <div id="chat-window" class="chat-window hidden">
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <span class="chat-header-dot"></span>
+            <span class="chat-header-title">AI Assistant</span>
+          </div>
+          <button class="chat-new-btn" id="chat-new-btn" title="Clear conversation">+ New Chat</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-welcome" id="chat-welcome">
+            <div class="chat-welcome-icon">✨</div>
+            <p class="chat-welcome-text">Ask me anything — I'll give you crisp, bullet-point summaries.</p>
+            <div class="chat-suggestions">
+              <button class="chat-chip" data-q="What is machine learning?">What is machine learning?</button>
+              <button class="chat-chip" data-q="Explain neural networks">Explain neural networks</button>
+              <button class="chat-chip" data-q="What is quantum computing?">What is quantum computing?</button>
+              <button class="chat-chip" data-q="How does blockchain work?">How does blockchain work?</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category chips -->
+    <nav class="chip-nav" aria-label="Model categories">
+      <a href="/chat"      class="chip chip-blue">   💬 Chat Models    </a>
+      <a href="/image"     class="chip chip-purple"> 🎨 Image Models   </a>
+      <a href="/video"     class="chip chip-pink">   🎬 Video Models   </a>
+      <a href="/audio"     class="chip chip-green">  🎵 Audio Models   </a>
+      <a href="/coding"    class="chip chip-orange"> ⚡ Coding Agents  </a>
+      <a href="/embedding" class="chip chip-cyan">   🔢 Embedding Models</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ── STATS BAR ─────────────────────────────────────────── -->
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-num">30+</span>
+    <span class="stat-label">Models</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">15+</span>
+    <span class="stat-label">Providers</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">6</span>
+    <span class="stat-label">Categories</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">3</span>
+    <span class="stat-label">Code Langs</span>
+  </div>
+</div>
+
+<!-- ── CATEGORY CARDS ────────────────────────────────────── -->
+<section class="categories-section">
+  <div class="container">
+    <h2 class="section-title">Browse by Category</h2>
+    <p class="section-subtitle">Click any category to explore models and get integration code snippets</p>
+
+    <div class="categories-grid">
+      {% for cat_key, cat_models in models.items() %}
+      <a href="/{{ cat_key }}" class="glass-card category-card">
+        <span class="cat-arrow">↗</span>
+        <div class="cat-icon-wrap">{{ cat_icons[cat_key] }}</div>
+        <div class="cat-name">{{ cat_labels[cat_key] }}</div>
+        <div class="cat-count">{{ cat_models|length }} models available</div>
+        <div class="cat-desc">{{ cat_descriptions[cat_key] }}</div>
+        <ul class="mini-model-list">
+          {% for m in cat_models[:3] %}
+          <li class="mini-model-item">{{ m.name }}</li>
+          {% endfor %}
+        </ul>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

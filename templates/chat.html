@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} — ModelHub{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>{{ label }}</span>
+    </div>
+    <h1 class="page-title">
+      <span class="page-icon">{{ icon }}</span>
+      <span class="gradient-text">{{ label }}</span>
+    </h1>
+    <p class="page-desc">{{ description }}</p>
+
+    <div class="filter-bar">
+      <input type="text" id="page-search" class="filter-input" placeholder="Filter models..." autocomplete="off" />
+      <div class="filter-chips">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="GA">GA</button>
+        <button class="filter-chip" data-filter="Beta">Beta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Models Grid -->
+  <div class="models-grid" id="models-grid">
+    {% for model in models %}
+    <article
+      class="model-card glass-card"
+      id="{{ model.id }}"
+      data-name="{{ model.name | lower }}"
+      data-tags="{{ model.tags | join(' ') | lower }}"
+      data-status="{{ model.status }}"
+      style="--i: {{ loop.index0 }}"
+    >
+      <div class="card-header">
+        <div class="model-identity">
+          <h3 class="model-name">{{ model.name }}</h3>
+          <span class="provider-tag">{{ model.provider }}</span>
+        </div>
+        {% if model.badge %}
+        <span class="badge badge-{{ model.badge_color }}">{{ model.badge }}</span>
+        {% endif %}
+      </div>
+
+      <p class="model-desc">{{ model.description }}</p>
+
+      <div class="tag-list">
+        {% for tag in model.tags %}
+        <span class="tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-pricing">{{ model.pricing }}</span>
+        <span class="meta-context">{{ model.context }}</span>
+        <span class="status-badge status-{{ model.status | lower }}">{{ model.status }}</span>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-integrate" onclick="openIntegrateModal('{{ model.id }}')">
+          ⚡ Integrate
+        </button>
+        <a class="btn-docs" href="{{ model.docs_url }}" target="_blank" rel="noopener">Docs</a>
+      </div>
+    </article>
+    {% endfor %}
+
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <div class="empty-state-icon">🔍</div>
+      <p class="empty-state-text">No models match your filter.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

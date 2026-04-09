@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}AI Pricing Plans — ModelHub{% endblock %}
+
+{% block content %}
+
+<!-- ── PRICING HERO ───────────────────────────────────────── -->
+<section class="pricing-hero">
+  <div class="hero-orb orb-purple"></div>
+  <div class="hero-orb orb-blue"></div>
+
+  <div style="position:relative; z-index:2;">
+    <div class="ai-badge">✨ AI Pricing</div>
+    <h1 class="pricing-title">
+      Choose your <span class="gradient-text">plan</span>
+    </h1>
+    <p class="pricing-subtitle">No hidden fees. No lock-in. Cancel anytime.</p>
+
+    <div class="billing-toggle">
+      <span>Monthly</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="annual-toggle" />
+        <span class="toggle-slider"></span>
+      </label>
+      <span>Annual <em class="save-badge">Save 20%</em></span>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING GRID ───────────────────────────────────────── -->
+<section class="pricing-section">
+  <div class="container">
+    <div class="pricing-grid">
+      {% for plan in plans %}
+      <div
+        class="glass-card pricing-card {% if plan.popular %}pricing-card--popular{% endif %}"
+        style="--plan-gradient: {{ plan.gradient }}"
+      >
+        <div class="plan-bar"></div>
+        {% if plan.popular %}
+        <div class="popular-tag">⭐ Most Popular</div>
+        {% endif %}
+
+        <div>
+          <div class="plan-name">{{ plan.name }}</div>
+          <div class="plan-tagline">{{ plan.tagline }}</div>
+        </div>
+
+        <div class="plan-price-wrap">
+          {% if plan.price != "Custom" %}
+          <span class="plan-currency">$</span>
+          <span class="plan-amount" data-monthly="{{ plan.price }}">{{ plan.price }}</span>
+          <span class="plan-period">{{ plan.period }}</span>
+          {% else %}
+          <span class="plan-amount">Custom</span>
+          {% endif %}
+        </div>
+
+        <ul class="plan-features">
+          {% for feature in plan.features %}
+          <li class="plan-feature">
+            <div class="feature-check">✓</div>
+            <span>{{ feature }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <a href="#" class="plan-cta">{{ plan.cta }}</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── FAQ ───────────────────────────────────────────────── -->
+<section style="padding: 0 0 80px;">
+  <div class="container" style="text-align:center; max-width:640px; margin:0 auto;">
+    <h2 class="section-title gradient-text" style="margin-bottom:8px;">Still have questions?</h2>
+    <p class="section-subtitle">All plans include full API documentation, code snippets in Python, cURL, and JavaScript.</p>
+    <a href="/" class="btn-integrate" style="display:inline-block; padding:12px 36px; border-radius:12px; margin-top:16px;">
+      Explore Models →
+    </a>
+  </div>
+</section>
+
+{% endblock %}
