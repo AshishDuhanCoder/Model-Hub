@@ -2,22 +2,25 @@
 {% block title %}{{ label }} — ModelHub{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="two-pane-layout">
 
-  <!-- Page Header -->
-  <div class="page-header">
-    <div class="breadcrumb">
-      <a href="/">Home</a>
-      <span class="breadcrumb-sep">/</span>
-      <span>{{ label }}</span>
+  <!-- LEFT PANE: FILTERS + MODEL LIST -->
+  <aside class="left-pane">
+    <div class="left-pane-header">
+      <div class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>{{ label }}</span>
+      </div>
+      <h1 class="page-title">
+        <span class="page-icon">{{ icon }}</span>
+        <span class="gradient-text">{{ label }}</span>
+      </h1>
+      <p class="page-desc">{{ description }}</p>
     </div>
-    <h1 class="page-title">
-      <span class="page-icon">{{ icon }}</span>
-      <span class="gradient-text">{{ label }}</span>
-    </h1>
-    <p class="page-desc">{{ description }}</p>
 
-    <div class="filter-bar">
+    <!-- Filter Controls -->
+    <div class="filter-bar-sidebar">
       <input type="text" id="page-search" class="filter-input" placeholder="Filter models..." autocomplete="off" />
       <div class="filter-chips">
         <button class="filter-chip active" data-filter="all">All</button>
@@ -25,56 +28,91 @@
         <button class="filter-chip" data-filter="Beta">Beta</button>
       </div>
     </div>
-  </div>
 
-  <!-- Models Grid -->
-  <div class="models-grid" id="models-grid">
-    {% for model in models %}
-    <article
-      class="model-card glass-card"
-      id="{{ model.id }}"
-      data-name="{{ model.name | lower }}"
-      data-tags="{{ model.tags | join(' ') | lower }}"
-      data-status="{{ model.status }}"
-      style="--i: {{ loop.index0 }}"
-    >
-      <div class="card-header">
-        <div class="model-identity">
-          <h3 class="model-name">{{ model.name }}</h3>
-          <span class="provider-tag">{{ model.provider }}</span>
+    <!-- Models List -->
+    <div class="models-list" id="models-grid">
+      {% for model in models %}
+      <article
+        class="model-card model-list-item glass-card"
+        id="{{ model.id }}"
+        data-name="{{ model.name | lower }}"
+        data-tags="{{ model.tags | join(' ') | lower }}"
+        data-status="{{ model.status }}"
+        onclick="selectModel(this)"
+      >
+        <div class="card-header">
+          <div class="model-identity">
+            <h3 class="model-name">{{ model.name }}</h3>
+            <span class="provider-tag">{{ model.provider }}</span>
+          </div>
+          {% if model.badge %}
+          <span class="badge badge-{{ model.badge_color }}">{{ model.badge }}</span>
+          {% endif %}
         </div>
-        {% if model.badge %}
-        <span class="badge badge-{{ model.badge_color }}">{{ model.badge }}</span>
-        {% endif %}
+
+        <p class="model-desc">{{ model.description }}</p>
+
+        <div class="tag-list">
+          {% for tag in model.tags %}
+          <span class="tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="meta-row">
+          <span class="meta-pricing">{{ model.pricing }}</span>
+          <span class="meta-context">{{ model.context }}</span>
+          <span class="status-badge status-{{ model.status | lower }}">{{ model.status }}</span>
+        </div>
+      </article>
+      {% endfor %}
+
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-state-icon">🔍</div>
+        <p class="empty-state-text">No models match your filter.</p>
       </div>
-
-      <p class="model-desc">{{ model.description }}</p>
-
-      <div class="tag-list">
-        {% for tag in model.tags %}
-        <span class="tag">{{ tag }}</span>
-        {% endfor %}
-      </div>
-
-      <div class="meta-row">
-        <span class="meta-pricing">{{ model.pricing }}</span>
-        <span class="meta-context">{{ model.context }}</span>
-        <span class="status-badge status-{{ model.status | lower }}">{{ model.status }}</span>
-      </div>
-
-      <div class="card-actions">
-        <button class="btn-integrate" onclick="openIntegrateModal('{{ model.id }}')">
-          ⚡ Integrate
-        </button>
-        <a class="btn-docs" href="{{ model.docs_url }}" target="_blank" rel="noopener">Docs</a>
-      </div>
-    </article>
-    {% endfor %}
-
-    <div class="empty-state" id="empty-state" style="display:none;">
-      <div class="empty-state-icon">🔍</div>
-      <p class="empty-state-text">No models match your filter.</p>
     </div>
-  </div>
+  </aside>
+
+  <!-- RIGHT PANE: CHAT INTERFACE -->
+  <section class="right-pane">
+    <div class="chat-header">
+      <div id="selected-model-info">
+        <h2>Select a Model</h2>
+        <p>Choose a model from the list to start chatting</p>
+      </div>
+      <button class="btn-close-model" onclick="clearModelSelection()" style="display:none;" id="close-model-btn">✕</button>
+    </div>
+
+    <div class="chat-container" id="chat-container" style="display:none;">
+      <div id="chat-messages" class="chat-messages">
+        <div id="chat-welcome" class="chat-welcome">
+          <div class="chat-welcome-icon">💬</div>
+          <p class="chat-welcome-text">Start a conversation with this model</p>
+          <div class="chat-suggestions">
+            <button class="chat-chip" data-q="What are your capabilities?">Capabilities</button>
+            <button class="chat-chip" data-q="How do I integrate you?">Integration</button>
+            <button class="chat-chip" data-q="What are your pricing?">Pricing</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <input 
+          type="text" 
+          id="chat-input" 
+          class="chat-input" 
+          placeholder="Ask something..." 
+          autocomplete="off"
+          onkeydown="if(event.key==='Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { submitChat(); event.preventDefault(); }"
+        />
+        <button class="btn-send" id="chat-send-btn" onclick="submitChat()">Send</button>
+      </div>
+    </div>
+
+    <div id="model-welcome" class="model-welcome">
+      <div class="welcome-icon">🤖</div>
+      <p class="welcome-text">Select a model from the left to begin</p>
+    </div>
+  </section>
 </div>
 {% endblock %}

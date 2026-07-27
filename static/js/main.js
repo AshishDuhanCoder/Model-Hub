@@ -517,3 +517,158 @@ document.addEventListener('keydown', e => {
     }
   }
 });
+
+/* ============================================================
+   TWO-PANE CHAT INTERFACE
+   ============================================================ */
+let selectedModel = null;
+
+function selectModel(cardElement) {
+  // Remove active class from all cards
+  document.querySelectorAll('.model-list-item').forEach(card => {
+    card.classList.remove('active');
+  });
+  
+  // Add active class to clicked card
+  cardElement.classList.add('active');
+  
+  // Extract model info
+  const modelId = cardElement.id;
+  const modelName = cardElement.querySelector('.model-name').textContent;
+  const modelDesc = cardElement.querySelector('.model-desc').textContent;
+  
+  selectedModel = { id: modelId, name: modelName, desc: modelDesc };
+  
+  // Show chat container, hide welcome
+  const chatContainer = document.getElementById('chat-container');
+  const modelWelcome = document.getElementById('model-welcome');
+  const selectedInfo = document.getElementById('selected-model-info');
+  const closeBtn = document.getElementById('close-model-btn');
+  
+  if (chatContainer) chatContainer.style.display = 'flex';
+  if (modelWelcome) modelWelcome.style.display = 'none';
+  if (selectedInfo) {
+    selectedInfo.innerHTML = `
+      <h2>${escapeHtml(modelName)}</h2>
+      <p>${escapeHtml(modelDesc.substring(0, 100))}...</p>
+    `;
+  }
+  if (closeBtn) closeBtn.style.display = 'flex';
+  
+  // Clear chat and show welcome
+  const chatMsgs = document.getElementById('chat-messages');
+  if (chatMsgs) {
+    chatMsgs.innerHTML = `
+      <div id="chat-welcome" class="chat-welcome">
+        <div class="chat-welcome-icon">💬</div>
+        <p class="chat-welcome-text">Start a conversation with ${escapeHtml(modelName)}</p>
+        <div class="chat-suggestions">
+          <button class="chat-chip" data-q="What are your capabilities?">Capabilities</button>
+          <button class="chat-chip" data-q="How do I integrate?">Integration</button>
+          <button class="chat-chip" data-q="What's your pricing?">Pricing</button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function clearModelSelection() {
+  // Remove active class
+  document.querySelectorAll('.model-list-item').forEach(card => {
+    card.classList.remove('active');
+  });
+  
+  selectedModel = null;
+  
+  // Hide chat, show welcome
+  const chatContainer = document.getElementById('chat-container');
+  const modelWelcome = document.getElementById('model-welcome');
+  const selectedInfo = document.getElementById('selected-model-info');
+  const closeBtn = document.getElementById('close-model-btn');
+  
+  if (chatContainer) chatContainer.style.display = 'none';
+  if (modelWelcome) modelWelcome.style.display = 'flex';
+  if (selectedInfo) {
+    selectedInfo.innerHTML = `
+      <h2>Select a Model</h2>
+      <p>Choose a model from the list to start chatting</p>
+    `;
+  }
+  if (closeBtn) closeBtn.style.display = 'none';
+}
+
+function submitChat() {
+  if (!selectedModel) return;
+  
+  const chatInput = document.getElementById('chat-input');
+  const message = chatInput ? chatInput.value.trim() : '';
+  
+  if (!message) return;
+  
+  // Add user message
+  const chatMsgs = document.getElementById('chat-messages');
+  if (chatMsgs) {
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-bubble-wrap user';
+    userBubble.innerHTML = `<div class="chat-bubble-user">${escapeHtml(message)}</div>`;
+    chatMsgs.appendChild(userBubble);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+  
+  // Clear input
+  if (chatInput) chatInput.value = '';
+  
+  // Show typing indicator
+  if (chatMsgs) {
+    const typingBubble = document.createElement('div');
+    typingBubble.className = 'chat-bubble-wrap ai';
+    typingBubble.id = 'typing-indicator';
+    typingBubble.innerHTML = `
+      <div class="chat-typing">
+        <span class="chat-typing-dot"></span>
+        <span class="chat-typing-dot"></span>
+        <span class="chat-typing-dot"></span>
+      </div>`;
+    chatMsgs.appendChild(typingBubble);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+  
+  // Simulate API response (replace with actual API call)
+  setTimeout(() => {
+    const typingEl = document.getElementById('typing-indicator');
+    if (typingEl) typingEl.remove();
+    
+    if (chatMsgs) {
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'chat-bubble-wrap ai';
+      aiBubble.innerHTML = `
+        <div class="chat-bubble-ai">
+          <p class="chat-ai-desc">Thanks for asking about ${escapeHtml(selectedModel.name)}! This is a demo response. You can integrate real API responses here.</p>
+        </div>`;
+      chatMsgs.appendChild(aiBubble);
+      chatMsgs.scrollTop = chatMsgs.scrollHeight;
+    }
+  }, 1500);
+}
+
+// Chat suggestions click handler
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('chat-chip')) {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+      chatInput.value = e.target.dataset.q;
+      chatInput.focus();
+    }
+  }
+});
+
+// Initialize filter behavior for two-pane layout
+document.addEventListener('DOMContentLoaded', () => {
+  const pageSearch = document.getElementById('page-search');
+  if (pageSearch) {
+    pageSearch.addEventListener('input', debounce(e => {
+      activeQuery = e.target.value.toLowerCase().trim();
+      applyFilters();
+    }, 150));
+  }
+});
