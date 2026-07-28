@@ -3,18 +3,72 @@
 
 {% block content %}
 
-<!-- ── HERO ─────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-orb orb-purple"></div>
-  <div class="hero-orb orb-blue"></div>
-  <div class="hero-orb orb-pink"></div>
+<div class="home-two-pane">
+  <!-- ── LEFT PANE: CATEGORY NAVIGATION ─────────────────── -->
+  <aside class="home-left-pane">
+    <div class="home-sidebar-header">
+      <h2>Categories</h2>
+      <p>Browse models by type</p>
+    </div>
 
-  <div class="hero-content">
-    <div class="hero-eyebrow">AI Model Aggregator</div>
-    <h1 class="hero-title">
-      What would you like to <span class="gradient-text">explore?</span>
-    </h1>
-    <p class="hero-subtitle">30+ frontier AI models. One unified interface. Integrate anywhere.</p>
+    <nav class="home-categories-nav">
+      <a href="/chat" class="home-nav-item {% if request.path == '/chat' %}active{% endif %}">
+        <span class="home-nav-icon">💬</span>
+        <span class="home-nav-label">Chat</span>
+      </a>
+      <a href="/image" class="home-nav-item {% if request.path == '/image' %}active{% endif %}">
+        <span class="home-nav-icon">🎨</span>
+        <span class="home-nav-label">Image</span>
+      </a>
+      <a href="/video" class="home-nav-item {% if request.path == '/video' %}active{% endif %}">
+        <span class="home-nav-icon">🎬</span>
+        <span class="home-nav-label">Video</span>
+      </a>
+      <a href="/audio" class="home-nav-item {% if request.path == '/audio' %}active{% endif %}">
+        <span class="home-nav-icon">🎵</span>
+        <span class="home-nav-label">Audio</span>
+      </a>
+      <a href="/coding" class="home-nav-item {% if request.path == '/coding' %}active{% endif %}">
+        <span class="home-nav-icon">⚡</span>
+        <span class="home-nav-label">Coding</span>
+      </a>
+      <a href="/embedding" class="home-nav-item {% if request.path == '/embedding' %}active{% endif %}">
+        <span class="home-nav-icon">🔢</span>
+        <span class="home-nav-label">Embedding</span>
+      </a>
+    </nav>
+
+    <!-- Stats in sidebar -->
+    <div class="home-stats-sidebar">
+      <div class="home-stat-item">
+        <span class="home-stat-value">30+</span>
+        <span class="home-stat-label">Models</span>
+      </div>
+      <div class="home-stat-item">
+        <span class="home-stat-value">15+</span>
+        <span class="home-stat-label">Providers</span>
+      </div>
+      <div class="home-stat-item">
+        <span class="home-stat-value">6</span>
+        <span class="home-stat-label">Categories</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── RIGHT PANE: HERO & CONTENT ───────────────────── -->
+  <section class="home-right-pane">
+    <!-- ── HERO ─────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="hero-orb orb-purple"></div>
+      <div class="hero-orb orb-blue"></div>
+      <div class="hero-orb orb-pink"></div>
+
+      <div class="hero-content">
+        <div class="hero-eyebrow">AI Model Aggregator</div>
+        <h1 class="hero-title">
+          What would you like to <span class="gradient-text">explore?</span>
+        </h1>
+        <p class="hero-subtitle">30+ frontier AI models. One unified interface. Integrate anywhere.</p>
 
     <!-- Search / Ask -->
     <div class="search-wrapper">
@@ -123,6 +177,8 @@
       {% endfor %}
     </div>
   </div>
-</section>
+    </section>
+  </section>
+</div>
 
 {% endblock %}
