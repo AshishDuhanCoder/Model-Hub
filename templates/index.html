@@ -8,51 +8,46 @@
   <aside class="home-left-pane">
     <div class="home-sidebar-header">
       <h2>Categories</h2>
-      <p>Browse models by type</p>
+      <p>Browse by type</p>
+    </div>
+
+    <!-- Search/Filter for categories -->
+    <div class="home-sidebar-search">
+      <input 
+        type="text" 
+        id="category-search" 
+        class="home-search-input" 
+        placeholder="Search categories..." 
+        autocomplete="off"
+      />
     </div>
 
     <nav class="home-categories-nav">
-      <a href="/chat" class="home-nav-item {% if request.path == '/chat' %}active{% endif %}">
+      <a href="/chat" class="home-nav-item {% if request.path == '/chat' %}active{% endif %}" data-category="Chat">
         <span class="home-nav-icon">💬</span>
         <span class="home-nav-label">Chat</span>
       </a>
-      <a href="/image" class="home-nav-item {% if request.path == '/image' %}active{% endif %}">
+      <a href="/image" class="home-nav-item {% if request.path == '/image' %}active{% endif %}" data-category="Image">
         <span class="home-nav-icon">🎨</span>
         <span class="home-nav-label">Image</span>
       </a>
-      <a href="/video" class="home-nav-item {% if request.path == '/video' %}active{% endif %}">
+      <a href="/video" class="home-nav-item {% if request.path == '/video' %}active{% endif %}" data-category="Video">
         <span class="home-nav-icon">🎬</span>
         <span class="home-nav-label">Video</span>
       </a>
-      <a href="/audio" class="home-nav-item {% if request.path == '/audio' %}active{% endif %}">
+      <a href="/audio" class="home-nav-item {% if request.path == '/audio' %}active{% endif %}" data-category="Audio">
         <span class="home-nav-icon">🎵</span>
         <span class="home-nav-label">Audio</span>
       </a>
-      <a href="/coding" class="home-nav-item {% if request.path == '/coding' %}active{% endif %}">
+      <a href="/coding" class="home-nav-item {% if request.path == '/coding' %}active{% endif %}" data-category="Coding">
         <span class="home-nav-icon">⚡</span>
         <span class="home-nav-label">Coding</span>
       </a>
-      <a href="/embedding" class="home-nav-item {% if request.path == '/embedding' %}active{% endif %}">
+      <a href="/embedding" class="home-nav-item {% if request.path == '/embedding' %}active{% endif %}" data-category="Embedding">
         <span class="home-nav-icon">🔢</span>
         <span class="home-nav-label">Embedding</span>
       </a>
     </nav>
-
-    <!-- Stats in sidebar -->
-    <div class="home-stats-sidebar">
-      <div class="home-stat-item">
-        <span class="home-stat-value">30+</span>
-        <span class="home-stat-label">Models</span>
-      </div>
-      <div class="home-stat-item">
-        <span class="home-stat-value">15+</span>
-        <span class="home-stat-label">Providers</span>
-      </div>
-      <div class="home-stat-item">
-        <span class="home-stat-value">6</span>
-        <span class="home-stat-label">Categories</span>
-      </div>
-    </div>
   </aside>
 
   <!-- ── RIGHT PANE: HERO & CONTENT ───────────────────── -->
