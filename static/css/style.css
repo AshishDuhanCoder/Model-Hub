@@ -1620,6 +1620,97 @@ img { max-width: 100%; display: block; }
   background: var(--bg-primary);
 }
 
+/* ============================================================
+   COLLAPSIBLE SIDEBAR
+   ============================================================ */
+.home-sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-sidebar-title-wrap {
+  flex: 1;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-color: rgba(120,75,160,0.2);
+}
+
+/* Collapsed state for sidebars */
+.home-left-pane.collapsed {
+  flex: 0 0 60px;
+  padding: 12px;
+  gap: 12px;
+}
+
+.home-left-pane.collapsed .home-sidebar-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-left-pane.collapsed .home-sidebar-title-wrap,
+.home-left-pane.collapsed .home-sidebar-search,
+.home-left-pane.collapsed .home-categories-nav {
+  display: none;
+}
+
+.left-pane.collapsed {
+  flex: 0 0 60px;
+  padding: 12px;
+}
+
+.left-pane.collapsed .left-pane-header,
+.left-pane.collapsed .filter-bar-sidebar {
+  display: none;
+}
+
+.left-pane.collapsed .models-list {
+  padding: 0;
+  gap: 0;
+}
+
+.left-pane.collapsed .model-list-item {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0;
+}
+
+.left-pane.collapsed .model-list-item::before {
+  content: attr(data-icon);
+  font-size: 1.5rem;
+}
+
+.left-pane.collapsed .empty-state {
+  display: none;
+}
+
 .models-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
