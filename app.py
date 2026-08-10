@@ -773,38 +773,9 @@ def api_ask():
     is_followup    = bool(context_topic and (len(q.split()) <= 3 or _FOLLOWUP.search(q)))
     resolved_topic = context_topic if is_followup else q
 
-    # ── Resolve API key: user-supplied header takes priority ─
-    active_key = request.headers.get("X-User-Key", "").strip() or _GROQ_KEY
-
-    # ── Try Groq first ───────────────────────────────────────
-    if active_key:
-        try:
-            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "",
-                                         api_key=active_key)
-            bullets = data.get("bullets") or []
-            if bullets:
-                model_label = used_model.replace("-", " ").title()
-                return jsonify({
-                    "query":       q,
-                    "topic":       resolved_topic,
-                    "title":       data.get("title", q.title()),
-                    "description": data.get("description", ""),
-                    "bullets":     bullets,
-                    "source":      f"Groq — {model_label}",
-                    "url":         "",
-                })
-        except http_requests.HTTPError as exc:
-            status = exc.response.status_code if exc.response is not None else 0
-            if status == 401:
-                print("[Groq HTTP 401] invalid or missing key; falling back to DuckDuckGo")
-            else:
-                print(f"[Groq HTTP {status}] falling back to DuckDuckGo")
-            # any other error → fall through to DuckDuckGo
-        except Exception as exc:
-            print(f"[Groq error] {type(exc).__name__}: {exc}")
-            # fall through to DuckDuckGo
-
-    # ── DuckDuckGo fallback ─────────────────────────────────────
+    # DuckDuckGo is intentionally the primary provider. It is free, keyless,
+    # and ensures each question is searched independently instead of being
+    # answered by a reused model response.
     raw_topic = resolved_topic if is_followup else q
     topic = re.sub(
         r'^(what is|what are|who is|who was|how does|how do|explain|define|tell me about)\s+',
@@ -819,7 +790,6 @@ def api_ask():
     topic = topic_aliases.get(topic.lower(), topic)
 
     # Try the cleaned topic first, then the complete natural-language question.
-    # DuckDuckGo often indexes the latter more reliably for explanatory questions.
     candidates = [topic]
     if raw_topic.strip().lower() != topic.lower():
         candidates.append(raw_topic.strip())
@@ -833,20 +803,38 @@ def api_ask():
                 topic = candidate
                 break
     except Exception as exc:
-        return jsonify({"error": f"Both Groq and DuckDuckGo unavailable ({type(exc).__name__})."}), 502
+        print(f"[DuckDuckGo error] {type(exc).__name__}: {exc}")
 
-    if not result:
-        return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
+    if result:
+        return jsonify({
+            "query": q,
+            "topic": topic,
+            "title": result["title"],
+            "description": result["description"],
+            "bullets": result["bullets"],
+            "source": result["source"],
+            "url": result["url"],
+        }), 200, {"Cache-Control": "no-store"}
 
-    return jsonify({
-        "query":       q,
-        "topic":       resolved_topic,
-        "title":       result["title"],
-        "description": result["description"],
-        "bullets":     result["bullets"],
-        "source":      result["source"],
-        "url":         result["url"],
-    })
+    # Optional Groq fallback only when both official DuckDuckGo endpoints fail.
+    active_key = request.headers.get("X-User-Key", "").strip() or _GROQ_KEY
+    if active_key:
+        try:
+            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "", api_key=active_key)
+            bullets = data.get("bullets") or []
+            if bullets:
+                return jsonify({
+                    "query": q, "topic": resolved_topic,
+                    "title": data.get("title", q.title()),
+                    "description": data.get("description", ""),
+                    "bullets": bullets,
+                    "source": f"Groq fallback — {used_model.replace('-', ' ').title()}",
+                    "url": "",
+                }), 200, {"Cache-Control": "no-store"}
+        except Exception as exc:
+            print(f"[Groq fallback error] {type(exc).__name__}: {exc}")
+
+    return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
 
 
 if __name__ == "__main__":
