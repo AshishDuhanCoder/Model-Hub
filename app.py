@@ -5,6 +5,7 @@ import urllib3
 import re
 import json
 import os
+import html
 from urllib.parse import quote
 
 # Load .env file (GEMINI_API_KEY and any future keys live there)
@@ -688,7 +689,7 @@ def _fetch_duckduckgo(topic: str) -> dict:
         else:
             bullets = _to_bullets(abstract, n=5)
             if not bullets and abstract:
-                bullets = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\\s+", abstract) if len(sentence.strip()) > 15][:5]
+                bullets = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\s+", abstract) if len(sentence.strip()) > 15][:5]
 
         if not abstract or not bullets:
             return {}
@@ -704,6 +705,42 @@ def _fetch_duckduckgo(topic: str) -> dict:
     except Exception as exc:
         print(f"[DuckDuckGo] Error: {type(exc).__name__}: {exc}")
         return {}
+
+
+def _fetch_duckduckgo_web(topic: str) -> dict:
+    """Use DuckDuckGo's free HTML search when Instant Answers has no abstract."""
+    response = _HTTP.get(
+        "https://html.duckduckgo.com/html/",
+        params={"q": topic},
+        headers={"User-Agent": "Mozilla/5.0 (ModelHub/1.0)"},
+        timeout=10,
+    )
+    response.raise_for_status()
+    page = response.text
+    results = []
+    pattern = re.compile(
+        r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?'
+        r'<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    for url, raw_title, raw_snippet in pattern.findall(page):
+        clean = lambda value: re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", value))).strip()
+        title, snippet = clean(raw_title), clean(raw_snippet)
+        if title and snippet:
+            results.append((title, snippet, html.unescape(url)))
+        if len(results) >= 5:
+            break
+    if not results:
+        return {}
+    title, first_snippet, url = results[0]
+    bullets = [snippet for _, snippet, _ in results]
+    return {
+        "title": title,
+        "description": first_snippet,
+        "bullets": bullets,
+        "url": url,
+        "source": f"DuckDuckGo Search — {title}",
+    }
 
 
 @app.route("/api/ask")
@@ -759,18 +796,19 @@ def api_ask():
         except http_requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status == 401:
-                src = "your entered key" if request.headers.get("X-User-Key") else "GROQ_API_KEY in .env"
-                return jsonify({"error": f"Invalid Groq API key ({src}). Please check and re-enter."}), 503
-            print(f"[Groq HTTP {status}] falling back to DuckDuckGo")
+                print("[Groq HTTP 401] invalid or missing key; falling back to DuckDuckGo")
+            else:
+                print(f"[Groq HTTP {status}] falling back to DuckDuckGo")
             # any other error → fall through to DuckDuckGo
         except Exception as exc:
             print(f"[Groq error] {type(exc).__name__}: {exc}")
             # fall through to DuckDuckGo
 
     # ── DuckDuckGo fallback ─────────────────────────────────────
-    topic = resolved_topic if is_followup else re.sub(
-        r'^(what is|what are|who is|how does|explain|define|tell me about)\s+',
-        '', q, flags=re.IGNORECASE).strip() or q
+    raw_topic = resolved_topic if is_followup else q
+    topic = re.sub(
+        r'^(what is|what are|who is|who was|how does|how do|explain|define|tell me about)\s+',
+        '', raw_topic, flags=re.IGNORECASE).strip() or raw_topic
     topic = re.sub(r'[?!.]+$', '', topic).strip()
     topic_aliases = {
         "an ai": "Artificial Intelligence",
@@ -779,13 +817,26 @@ def api_ask():
         "ml": "Machine Learning",
     }
     topic = topic_aliases.get(topic.lower(), topic)
+
+    # Try the cleaned topic first, then the complete natural-language question.
+    # DuckDuckGo often indexes the latter more reliably for explanatory questions.
+    candidates = [topic]
+    if raw_topic.strip().lower() != topic.lower():
+        candidates.append(raw_topic.strip())
+    result = {}
     try:
-        result = _fetch_duckduckgo(topic)
+        for candidate in candidates:
+            result = _fetch_duckduckgo(candidate)
+            if not result:
+                result = _fetch_duckduckgo_web(candidate)
+            if result:
+                topic = candidate
+                break
     except Exception as exc:
         return jsonify({"error": f"Both Groq and DuckDuckGo unavailable ({type(exc).__name__})."}), 502
 
     if not result:
-        return jsonify({"error": f'No results found for "{topic}". Try rephrasing.'}), 404
+        return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
 
     return jsonify({
         "query":       q,
