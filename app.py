@@ -5,6 +5,7 @@ import urllib3
 import re
 import json
 import os
+from urllib.parse import quote
 
 # Load .env file (GEMINI_API_KEY and any future keys live there)
 load_dotenv()
@@ -647,44 +648,61 @@ def _to_bullets(text, n=6):
 
 
 def _fetch_duckduckgo(topic: str) -> dict:
-    """Search DuckDuckGo Instant Answer API and return {title, description, bullets, url}."""
+    """Query DuckDuckGo Instant Answers, including related topics when no abstract exists."""
     try:
-        resp = _HTTP.get(_DUCKDUCKGO_API,
-            params={"q": topic, "format": "json", "no_html": 1},
-            timeout=8)
-        resp.raise_for_status()
-        data = resp.json()
-        
-        # Extract main result
-        abstract = data.get("AbstractText", "").strip()
-        title = data.get("Heading", topic).strip()
-        url = data.get("AbstractURL", "").strip()
-        
-        if not abstract:
+        response = _HTTP.get(
+            _DUCKDUCKGO_API,
+            params={
+                "q": topic,
+                "format": "json",
+                "no_html": 1,
+                "skip_disambig": 1,
+                "no_redirect": 1,
+            },
+            headers={"User-Agent": "ModelHub/1.0"},
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        title = (data.get("Heading") or topic).strip()
+        abstract = (data.get("AbstractText") or data.get("Definition") or "").strip()
+        url = (data.get("AbstractURL") or data.get("DefinitionURL") or "").strip()
+
+        # Instant Answers often return RelatedTopics instead of AbstractText.
+        related = []
+        def collect_topics(items):
+            for item in items or []:
+                if item.get("Text"):
+                    related.append(item["Text"].strip())
+                collect_topics(item.get("Topics", []))
+                if len(related) >= 5:
+                    return
+
+        collect_topics(data.get("RelatedTopics", []))
+        if not abstract and related:
+            abstract = related[0]
+            bullets = related[:5]
+            if not url:
+                url = data.get("Redirect", "") or "https://duckduckgo.com/?q=" + quote(topic)
+        else:
+            bullets = _to_bullets(abstract, n=5)
+            if not bullets and abstract:
+                bullets = [sentence.strip() for sentence in re.split(r"(?<=[.!?])\\s+", abstract) if len(sentence.strip()) > 15][:5]
+
+        if not abstract or not bullets:
             return {}
-        
-        # Parse abstract into bullets
-        bullets = _to_bullets(abstract, n=5)
-        if not bullets:
-            # If _to_bullets can't extract well, split by sentences
-            sentences = re.split(r'(?<=[.!?])\s+', abstract)
-            bullets = [s.strip() + '.' if not s.strip().endswith(('.', '!', '?')) else s.strip() 
-                      for s in sentences if len(s.strip()) > 15][:5]
-        
-        if not bullets:
-            return {}
-        
-        description = abstract[:120] + "..." if len(abstract) > 120 else abstract
-        
+
+        description = abstract[:180] + "..." if len(abstract) > 180 else abstract
         return {
             "title": title,
             "description": description,
             "bullets": bullets,
             "url": url,
-            "source": f"DuckDuckGo — {title}"
+            "source": f"DuckDuckGo — {title}",
         }
-    except Exception as e:
-        print(f"[DuckDuckGo] Error: {type(e).__name__}: {e}")
+    except Exception as exc:
+        print(f"[DuckDuckGo] Error: {type(exc).__name__}: {exc}")
         return {}
 
 
@@ -699,6 +717,21 @@ def api_ask():
 
     if len(q) < 2:
         return jsonify({"error": "Query too short."}), 400
+
+    # DuckDuckGo has no search result for greetings; answer these locally.
+    if re.fullmatch(r"(?:hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", q, re.IGNORECASE):
+        return jsonify({
+            "query": q,
+            "topic": "",
+            "title": "Hello from ModelHub",
+            "description": "I can help you explore AI models or answer questions about science, technology, and history.",
+            "bullets": [
+                "Ask a question in the search box to get a researched answer.",
+                "Try questions such as: What is artificial intelligence?",
+            ],
+            "source": "ModelHub",
+            "url": "",
+        })
 
     is_followup    = bool(context_topic and (len(q.split()) <= 3 or _FOLLOWUP.search(q)))
     resolved_topic = context_topic if is_followup else q
@@ -738,6 +771,14 @@ def api_ask():
     topic = resolved_topic if is_followup else re.sub(
         r'^(what is|what are|who is|how does|explain|define|tell me about)\s+',
         '', q, flags=re.IGNORECASE).strip() or q
+    topic = re.sub(r'[?!.]+$', '', topic).strip()
+    topic_aliases = {
+        "an ai": "Artificial Intelligence",
+        "ai": "Artificial Intelligence",
+        "artificial intelligence": "Artificial Intelligence",
+        "ml": "Machine Learning",
+    }
+    topic = topic_aliases.get(topic.lower(), topic)
     try:
         result = _fetch_duckduckgo(topic)
     except Exception as exc:
