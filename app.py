@@ -551,8 +551,7 @@ _FOLLOWUP = re.compile(
 _JSON_FENCE  = re.compile(r'```(?:json)?\s*([\s\S]*?)```', re.IGNORECASE)
 _HTML_TAGS   = re.compile(r'<[^>]+>')
 _DISAMBIG    = re.compile(r'may refer to|can refer to|following may|disambiguation', re.I)
-_WIKI_API    = "https://en.wikipedia.org/w/api.php"
-_WIKI_HEADERS= {"User-Agent": "ModelHub/1.0 (local dev)"}
+_DUCKDUCKGO_API = "https://api.duckduckgo.com/"
 
 
 # ── Groq ──────────────────────────────────────────────────────
@@ -647,50 +646,46 @@ def _to_bullets(text, n=6):
     return bullets
 
 
-def _fetch_wiki(topic: str) -> dict:
-    """Search Wikipedia and return {title, description, bullets, url}."""
-    s = _HTTP.get(_WIKI_API,
-        params={"action": "query", "list": "search", "srsearch": topic,
-                "format": "json", "srlimit": 5, "utf8": 1},
-        headers=_WIKI_HEADERS, timeout=8)
-    s.raise_for_status()
-    hits = s.json().get("query", {}).get("search", [])
-    if not hits:
+def _fetch_duckduckgo(topic: str) -> dict:
+    """Search DuckDuckGo Instant Answer API and return {title, description, bullets, url}."""
+    try:
+        resp = _HTTP.get(_DUCKDUCKGO_API,
+            params={"q": topic, "format": "json", "no_html": 1},
+            timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        # Extract main result
+        abstract = data.get("AbstractText", "").strip()
+        title = data.get("Heading", topic).strip()
+        url = data.get("AbstractURL", "").strip()
+        
+        if not abstract:
+            return {}
+        
+        # Parse abstract into bullets
+        bullets = _to_bullets(abstract, n=5)
+        if not bullets:
+            # If _to_bullets can't extract well, split by sentences
+            sentences = re.split(r'(?<=[.!?])\s+', abstract)
+            bullets = [s.strip() + '.' if not s.strip().endswith(('.', '!', '?')) else s.strip() 
+                      for s in sentences if len(s.strip()) > 15][:5]
+        
+        if not bullets:
+            return {}
+        
+        description = abstract[:120] + "..." if len(abstract) > 120 else abstract
+        
+        return {
+            "title": title,
+            "description": description,
+            "bullets": bullets,
+            "url": url,
+            "source": f"DuckDuckGo — {title}"
+        }
+    except Exception as e:
+        print(f"[DuckDuckGo] Error: {type(e).__name__}: {e}")
         return {}
-
-    for hit in hits:
-        candidate = hit["title"]
-        if "(disambiguation)" in candidate.lower():
-            continue
-        for full in (False, True):
-            params = {"action": "query", "prop": "extracts", "explaintext": 1,
-                      "titles": candidate, "format": "json", "redirects": 1, "utf8": 1}
-            if full:
-                params["exsentences"] = 12
-            else:
-                params["exintro"] = 1
-            r = _HTTP.get(_WIKI_API, params=params, headers=_WIKI_HEADERS, timeout=8)
-            r.raise_for_status()
-            pages   = r.json().get("query", {}).get("pages", {})
-            extract = (next(iter(pages.values()), {}).get("extract") or "").strip()
-            if extract and not _DISAMBIG.search(extract) and len(extract) >= 60:
-                break
-        else:
-            continue
-
-        bullets = _to_bullets(extract, n=6)
-        if not bullets:
-            lines   = [l.strip() for l in extract.splitlines() if len(l.strip()) > 20]
-            bullets = [l if l[-1] in '.!?' else l + '.' for l in lines[:6]]
-        if not bullets:
-            continue
-
-        wiki_url = f"https://en.wikipedia.org/wiki/{candidate.replace(' ', '_')}"
-        desc     = _HTML_TAGS.sub("", hit.get("snippet", "")).strip()
-        return {"title": candidate, "description": desc,
-                "bullets": bullets, "url": wiki_url,
-                "source": f"Wikipedia — {candidate}"}
-    return {}
 
 
 @app.route("/api/ask")
@@ -733,34 +728,34 @@ def api_ask():
             if status == 401:
                 src = "your entered key" if request.headers.get("X-User-Key") else "GROQ_API_KEY in .env"
                 return jsonify({"error": f"Invalid Groq API key ({src}). Please check and re-enter."}), 503
-            print(f"[Groq HTTP {status}] falling back to Wikipedia")
-            # any other error → fall through to Wikipedia
+            print(f"[Groq HTTP {status}] falling back to DuckDuckGo")
+            # any other error → fall through to DuckDuckGo
         except Exception as exc:
             print(f"[Groq error] {type(exc).__name__}: {exc}")
-            # fall through to Wikipedia
+            # fall through to DuckDuckGo
 
-    # ── Wikipedia fallback ────────────────────────────────────
+    # ── DuckDuckGo fallback ─────────────────────────────────────
     topic = resolved_topic if is_followup else re.sub(
         r'^(what is|what are|who is|how does|explain|define|tell me about)\s+',
         '', q, flags=re.IGNORECASE).strip() or q
     try:
-        wiki = _fetch_wiki(topic)
+        result = _fetch_duckduckgo(topic)
     except Exception as exc:
-        return jsonify({"error": f"Both Groq and Wikipedia unavailable ({type(exc).__name__})."}), 502
+        return jsonify({"error": f"Both Groq and DuckDuckGo unavailable ({type(exc).__name__})."}), 502
 
-    if not wiki:
+    if not result:
         return jsonify({"error": f'No results found for "{topic}". Try rephrasing.'}), 404
 
     return jsonify({
         "query":       q,
         "topic":       resolved_topic,
-        "title":       wiki["title"],
-        "description": wiki["description"],
-        "bullets":     wiki["bullets"],
-        "source":      wiki["source"],
-        "url":         wiki["url"],
+        "title":       result["title"],
+        "description": result["description"],
+        "bullets":     result["bullets"],
+        "source":      result["source"],
+        "url":         result["url"],
     })
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=3000, host='0.0.0.0')

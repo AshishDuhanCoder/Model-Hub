@@ -215,12 +215,16 @@ img { max-width: 100%; display: block; }
    ============================================================ */
 .hero {
   position: relative;
-  min-height: 90vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 80px 24px 40px;
   overflow: hidden;
-  padding: 80px 24px 60px;
+}
+
+.home-right-pane .hero {
+  min-height: calc(100vh - 64px);
 }
 
 .hero-orb {
@@ -1509,6 +1513,202 @@ img { max-width: 100%; display: block; }
 .welcome-text {
   font-size: 1.1rem;
   font-weight: 500;
+}
+
+/* ============================================================
+   HOMEPAGE TWO-PANE LAYOUT
+   ============================================================ */
+.home-two-pane {
+  display: flex;
+  height: calc(100vh - 64px);
+  gap: 0;
+}
+
+.home-left-pane {
+  flex: 0 0 300px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 24px;
+  overflow-y: auto;
+}
+
+.home-sidebar-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.home-sidebar-header p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.home-categories-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.home-nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-color: rgba(120,75,160,0.2);
+}
+
+.home-nav-item.active {
+  background: rgba(120,75,160,0.15);
+  color: var(--grad-brand);
+  border-color: rgba(120,75,160,0.4);
+}
+
+.home-nav-icon {
+  font-size: 1.3rem;
+}
+
+.home-nav-label {
+  flex: 1;
+}
+
+.home-sidebar-search {
+  padding: 0 12px;
+  margin-bottom: 12px;
+}
+
+.home-search-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font);
+  transition: all var(--transition-fast);
+}
+
+.home-search-input:focus {
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(120,75,160,0.4);
+}
+
+.home-search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.home-right-pane {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-primary);
+}
+
+/* ============================================================
+   COLLAPSIBLE SIDEBAR
+   ============================================================ */
+.home-sidebar-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-sidebar-title-wrap {
+  flex: 1;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  border-color: rgba(120,75,160,0.2);
+}
+
+/* Collapsed state for sidebars */
+.home-left-pane.collapsed {
+  flex: 0 0 60px;
+  padding: 12px;
+  gap: 12px;
+}
+
+.home-left-pane.collapsed .home-sidebar-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-left-pane.collapsed .home-sidebar-title-wrap,
+.home-left-pane.collapsed .home-sidebar-search,
+.home-left-pane.collapsed .home-categories-nav {
+  display: none;
+}
+
+.left-pane.collapsed {
+  flex: 0 0 60px;
+  padding: 12px;
+}
+
+.left-pane.collapsed .left-pane-header,
+.left-pane.collapsed .filter-bar-sidebar {
+  display: none;
+}
+
+.left-pane.collapsed .models-list {
+  padding: 0;
+  gap: 0;
+}
+
+.left-pane.collapsed .model-list-item {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0;
+}
+
+.left-pane.collapsed .model-list-item::before {
+  content: attr(data-icon);
+  font-size: 1.5rem;
+}
+
+.left-pane.collapsed .empty-state {
+  display: none;
 }
 
 .models-grid {

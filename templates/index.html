@@ -3,18 +3,72 @@
 
 {% block content %}
 
-<!-- ── HERO ─────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-orb orb-purple"></div>
-  <div class="hero-orb orb-blue"></div>
-  <div class="hero-orb orb-pink"></div>
+<div class="home-two-pane">
+  <!-- ── LEFT PANE: CATEGORY NAVIGATION ─────────────────── -->
+  <aside class="home-left-pane" id="home-sidebar">
+    <div class="home-sidebar-header">
+      <div class="home-sidebar-title-wrap">
+        <h2>Categories</h2>
+        <p>Browse by type</p>
+      </div>
+      <button class="sidebar-toggle-btn" id="sidebar-toggle-home" title="Toggle sidebar">
+        <span class="toggle-icon">☰</span>
+      </button>
+    </div>
 
-  <div class="hero-content">
-    <div class="hero-eyebrow">AI Model Aggregator</div>
-    <h1 class="hero-title">
-      What would you like to <span class="gradient-text">explore?</span>
-    </h1>
-    <p class="hero-subtitle">30+ frontier AI models. One unified interface. Integrate anywhere.</p>
+    <!-- Search/Filter for categories -->
+    <div class="home-sidebar-search">
+      <input 
+        type="text" 
+        id="category-search" 
+        class="home-search-input" 
+        placeholder="Search categories..." 
+        autocomplete="off"
+      />
+    </div>
+
+    <nav class="home-categories-nav">
+      <a href="/chat" class="home-nav-item {% if request.path == '/chat' %}active{% endif %}" data-category="Chat">
+        <span class="home-nav-icon">💬</span>
+        <span class="home-nav-label">Chat</span>
+      </a>
+      <a href="/image" class="home-nav-item {% if request.path == '/image' %}active{% endif %}" data-category="Image">
+        <span class="home-nav-icon">🎨</span>
+        <span class="home-nav-label">Image</span>
+      </a>
+      <a href="/video" class="home-nav-item {% if request.path == '/video' %}active{% endif %}" data-category="Video">
+        <span class="home-nav-icon">🎬</span>
+        <span class="home-nav-label">Video</span>
+      </a>
+      <a href="/audio" class="home-nav-item {% if request.path == '/audio' %}active{% endif %}" data-category="Audio">
+        <span class="home-nav-icon">🎵</span>
+        <span class="home-nav-label">Audio</span>
+      </a>
+      <a href="/coding" class="home-nav-item {% if request.path == '/coding' %}active{% endif %}" data-category="Coding">
+        <span class="home-nav-icon">⚡</span>
+        <span class="home-nav-label">Coding</span>
+      </a>
+      <a href="/embedding" class="home-nav-item {% if request.path == '/embedding' %}active{% endif %}" data-category="Embedding">
+        <span class="home-nav-icon">🔢</span>
+        <span class="home-nav-label">Embedding</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── RIGHT PANE: HERO & CONTENT ───────────────────── -->
+  <section class="home-right-pane">
+    <!-- ── HERO ─────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="hero-orb orb-purple"></div>
+      <div class="hero-orb orb-blue"></div>
+      <div class="hero-orb orb-pink"></div>
+
+      <div class="hero-content">
+        <div class="hero-eyebrow">AI Model Aggregator</div>
+        <h1 class="hero-title">
+          What would you like to <span class="gradient-text">explore?</span>
+        </h1>
+        <p class="hero-subtitle">30+ frontier AI models. One unified interface. Integrate anywhere.</p>
 
     <!-- Search / Ask -->
     <div class="search-wrapper">
@@ -76,15 +130,7 @@
       </div>
     </div>
 
-    <!-- Category chips -->
-    <nav class="chip-nav" aria-label="Model categories">
-      <a href="/chat"      class="chip chip-blue">   💬 Chat Models    </a>
-      <a href="/image"     class="chip chip-purple"> 🎨 Image Models   </a>
-      <a href="/video"     class="chip chip-pink">   🎬 Video Models   </a>
-      <a href="/audio"     class="chip chip-green">  🎵 Audio Models   </a>
-      <a href="/coding"    class="chip chip-orange"> ⚡ Coding Agents  </a>
-      <a href="/embedding" class="chip chip-cyan">   🔢 Embedding Models</a>
-    </nav>
+
   </div>
 </section>
 
@@ -131,6 +177,8 @@
       {% endfor %}
     </div>
   </div>
-</section>
+    </section>
+  </section>
+</div>
 
 {% endblock %}

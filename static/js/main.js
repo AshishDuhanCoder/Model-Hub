@@ -671,4 +671,51 @@ document.addEventListener('DOMContentLoaded', () => {
       applyFilters();
     }, 150));
   }
+
+  // Homepage category search/filter
+  const categorySearch = document.getElementById('category-search');
+  if (categorySearch) {
+    categorySearch.addEventListener('input', e => {
+      const query = e.target.value.toLowerCase().trim();
+      const categoryItems = document.querySelectorAll('.home-nav-item');
+      
+      categoryItems.forEach(item => {
+        const categoryText = item.dataset.category.toLowerCase();
+        const matchesQuery = categoryText.includes(query);
+        item.style.display = matchesQuery ? 'flex' : 'none';
+      });
+    });
+  }
+
+  // Sidebar toggle functionality
+  const homeSidebarToggle = document.getElementById('sidebar-toggle-home');
+  const categorySidebarToggle = document.getElementById('sidebar-toggle-category');
+  
+  if (homeSidebarToggle) {
+    homeSidebarToggle.addEventListener('click', () => {
+      const sidebar = document.getElementById('home-sidebar');
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('home-sidebar-collapsed', sidebar.classList.contains('collapsed'));
+    });
+    
+    // Restore sidebar state
+    if (localStorage.getItem('home-sidebar-collapsed') === 'true') {
+      const sidebar = document.getElementById('home-sidebar');
+      sidebar.classList.add('collapsed');
+    }
+  }
+  
+  if (categorySidebarToggle) {
+    categorySidebarToggle.addEventListener('click', () => {
+      const sidebar = document.getElementById('category-sidebar');
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('category-sidebar-collapsed', sidebar.classList.contains('collapsed'));
+    });
+    
+    // Restore sidebar state
+    if (localStorage.getItem('category-sidebar-collapsed') === 'true') {
+      const sidebar = document.getElementById('category-sidebar');
+      sidebar.classList.add('collapsed');
+    }
+  }
 });
