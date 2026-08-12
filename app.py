@@ -756,7 +756,8 @@ def api_ask():
         return jsonify({"error": "Query too short."}), 400
 
     # DuckDuckGo has no search result for greetings; answer these locally.
-    if re.fullmatch(r"(?:hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", q, re.IGNORECASE):
+    normalized_q = re.sub(r"[^a-z ]", "", q.lower()).strip()
+    if normalized_q in {"hi", "hello", "hey", "good morning", "good afternoon", "good evening"}:
         return jsonify({
             "query": q,
             "topic": "",
