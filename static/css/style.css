@@ -1681,33 +1681,27 @@ img { max-width: 100%; display: block; }
 }
 
 .left-pane.collapsed .left-pane-header,
-.left-pane.collapsed .filter-bar-sidebar {
+.left-pane.collapsed .filter-bar-sidebar,
+.left-pane.collapsed .models-list {
   display: none;
 }
 
-.left-pane.collapsed .models-list {
-  padding: 0;
-  gap: 0;
+.left-pane.collapsed .sidebar-toggle-btn {
+  margin: 0 auto;
 }
 
-.left-pane.collapsed .model-list-item {
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  min-height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 0;
+/* Keep every sidebar child hidden in the collapsed state. The toggle is the
+   only visible control, preventing model names, tags, and empty-state copy
+   from leaking into the narrow rail. */
+.left-pane.collapsed > *:not(.sidebar-toggle-btn) {
+  display: none;
 }
 
-.left-pane.collapsed .model-list-item::before {
-  content: attr(data-icon);
-  font-size: 1.5rem;
+.home-left-pane.collapsed > *:not(.home-sidebar-header) {
+  display: none;
 }
 
-.left-pane.collapsed .empty-state {
+.home-left-pane.collapsed .home-sidebar-header .home-sidebar-title-wrap {
   display: none;
 }
 

@@ -471,27 +471,27 @@ def chat():
 
 @app.route("/image")
 def image():
-    return render_template("image.html", models=MODELS["image"], category="image",
+    return render_template("chat.html", models=MODELS["image"], category="image",
         label=CAT_LABELS["image"], icon=CAT_ICONS["image"], description=CAT_DESCRIPTIONS["image"])
 
 @app.route("/video")
 def video():
-    return render_template("video.html", models=MODELS["video"], category="video",
+    return render_template("chat.html", models=MODELS["video"], category="video",
         label=CAT_LABELS["video"], icon=CAT_ICONS["video"], description=CAT_DESCRIPTIONS["video"])
 
 @app.route("/audio")
 def audio():
-    return render_template("audio.html", models=MODELS["audio"], category="audio",
+    return render_template("chat.html", models=MODELS["audio"], category="audio",
         label=CAT_LABELS["audio"], icon=CAT_ICONS["audio"], description=CAT_DESCRIPTIONS["audio"])
 
 @app.route("/coding")
 def coding():
-    return render_template("coding.html", models=MODELS["coding"], category="coding",
+    return render_template("chat.html", models=MODELS["coding"], category="coding",
         label=CAT_LABELS["coding"], icon=CAT_ICONS["coding"], description=CAT_DESCRIPTIONS["coding"])
 
 @app.route("/embedding")
 def embedding():
-    return render_template("embedding.html", models=MODELS["embedding"], category="embedding",
+    return render_template("chat.html", models=MODELS["embedding"], category="embedding",
         label=CAT_LABELS["embedding"], icon=CAT_ICONS["embedding"], description=CAT_DESCRIPTIONS["embedding"])
 
 @app.route("/pricing")
