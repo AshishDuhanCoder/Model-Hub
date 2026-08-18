@@ -295,7 +295,19 @@ async function submitAsk(q) {
     const res  = await fetch(`/api/ask?${params}`, { headers });
     const data = await res.json();
     if (!res.ok || data.error) {
-      appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
+      if (res.status === 401 && getUserKey()) {
+        clearUserKey();
+        const keyBar = document.getElementById('chat-key-bar');
+        const keyInput = document.getElementById('chat-key-input');
+        if (keyBar) keyBar.classList.remove('hidden');
+        if (keyInput) {
+          keyInput.value = '';
+          keyInput.focus();
+        }
+        appendErrorBubble('Your saved API key is invalid or expired. It was removed. Enter a new key to continue, or leave it empty to use DuckDuckGo.');
+      } else {
+        appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
+      }
     } else {
       if (data.topic) contextTopic = data.topic;
       renderUsageCharts(data.usage);
