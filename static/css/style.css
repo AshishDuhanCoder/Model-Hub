@@ -19,6 +19,8 @@
   --grad-green:    linear-gradient(135deg,#00B894,#00CEC9);
   --grad-orange:   linear-gradient(135deg,#E17055,#FDCB6E);
   --grad-pink:     linear-gradient(135deg,#FF3CAC,#FF758C);
+  --accent-primary: #C850C0;
+  --accent-secondary: #2B86C5;
   --shadow-card:   0 4px 24px rgba(0,0,0,0.45);
   --shadow-hover:  0 8px 48px rgba(120,75,160,0.28);
   --shadow-glow:   0 0 60px rgba(120,75,160,0.18);
@@ -1703,6 +1705,57 @@ img { max-width: 100%; display: block; }
 
 .home-left-pane.collapsed .home-sidebar-header .home-sidebar-title-wrap {
   display: none;
+}
+
+/* Compact token telemetry: expands on hover or keyboard focus. */
+.usage-telemetry {
+  width: 112px;
+  min-height: 42px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.035);
+  overflow: hidden;
+  transition: width 180ms ease, min-height 180ms ease, background 180ms ease;
+  z-index: 3;
+}
+
+.usage-telemetry:hover,
+.usage-telemetry:focus-within,
+.usage-telemetry:focus {
+  width: 260px;
+  min-height: 126px;
+  background: rgba(255,255,255,0.07);
+  outline: none;
+}
+
+.usage-telemetry-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+.usage-telemetry-header span:last-child {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-sparkline-wrap { height: 30px; margin-top: 3px; }
+#usage-sparkline { width: 100%; height: 100%; overflow: visible; }
+.usage-bars { height: 32px; display: flex; align-items: end; gap: 3px; }
+.usage-bar { width: 8px; min-height: 5px; background: var(--accent-primary); border-radius: 3px 3px 1px 1px; position: relative; opacity: 0.75; }
+.usage-bar i { display: block; position: absolute; bottom: 0; width: 100%; background: var(--accent-secondary); border-radius: inherit; }
+.usage-detail { margin-top: 8px; color: var(--text-secondary); font-size: 0.68rem; line-height: 1.4; white-space: nowrap; opacity: 0; transition: opacity 150ms ease; }
+.usage-telemetry:hover .usage-detail,
+.usage-telemetry:focus .usage-detail,
+.usage-telemetry:focus-within .usage-detail { opacity: 1; }
+
+@media (max-width: 700px) {
+  .usage-telemetry { width: 96px; }
+  .usage-telemetry:hover, .usage-telemetry:focus-within, .usage-telemetry:focus { width: 220px; }
 }
 
 .models-grid {

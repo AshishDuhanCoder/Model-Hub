@@ -84,6 +84,12 @@
         <p>Choose a model from the list to start chatting</p>
       </div>
       <button class="btn-close-model" onclick="clearModelSelection()" style="display:none;" id="close-model-btn">✕</button>
+      <div class="usage-telemetry" id="usage-telemetry" aria-label="Token usage charts" tabindex="0">
+        <div class="usage-telemetry-header"><span>Token usage</span><span id="usage-total">0</span></div>
+        <div class="usage-sparkline-wrap"><svg id="usage-sparkline" viewBox="0 0 180 42" role="img" aria-label="Realtime token usage"></svg></div>
+        <div class="usage-bars" id="usage-bars" aria-label="Per call token usage"></div>
+        <div class="usage-detail" id="usage-detail">Ask a question to see prompt and answer tokens.</div>
+      </div>
     </div>
 
     <div class="chat-container" id="chat-container" style="display:none;">

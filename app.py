@@ -576,7 +576,7 @@ def _extract_json(raw: str) -> dict:
 
 
 def _ask_groq(question: str, context_topic: str = "", api_key: str = "") -> tuple:
-    """Returns (parsed_dict, model_name). Tries each model until one succeeds."""
+    """Returns (parsed_dict, model_name, usage). Tries each model until one succeeds."""
     api_key = api_key or _GROQ_KEY
     context_line = (
         f'This is a follow-up about "{context_topic}". '
@@ -611,8 +611,14 @@ def _ask_groq(question: str, context_topic: str = "", api_key: str = "") -> tupl
                 timeout=20,
             )
             resp.raise_for_status()
-            raw = resp.json()["choices"][0]["message"]["content"].strip()
-            return _extract_json(raw), model
+            payload = resp.json()
+            raw = payload["choices"][0]["message"]["content"].strip()
+            usage = payload.get("usage") or {}
+            return _extract_json(raw), model, {
+                "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+                "completion_tokens": int(usage.get("completion_tokens") or 0),
+                "total_tokens": int(usage.get("total_tokens") or 0),
+            }
         except http_requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status in (429, 503):
@@ -780,7 +786,7 @@ def api_ask():
     user_key = request.headers.get("X-User-Key", "").strip()
     if user_key:
         try:
-            data, used_model = _ask_groq(
+            data, used_model, usage = _ask_groq(
                 q,
                 context_topic=context_topic if is_followup else "",
                 api_key=user_key,
@@ -795,6 +801,7 @@ def api_ask():
                     "bullets": bullets,
                     "source": f"Your LLM key — {used_model.replace('-', ' ').title()}",
                     "url": "",
+                    "usage": usage,
                 }), 200, {"Cache-Control": "no-store"}
             return jsonify({"error": "The selected LLM returned an empty answer."}), 502
         except http_requests.HTTPError as exc:
@@ -848,6 +855,12 @@ def api_ask():
             "bullets": result["bullets"],
             "source": result["source"],
             "url": result["url"],
+            "usage": {
+                "prompt_tokens": max(1, len(q.split()) * 2),
+                "completion_tokens": max(1, len((result.get("description") or "").split()) // 2),
+                "total_tokens": max(2, len(q.split()) * 2 + len((result.get("description") or "").split()) // 2),
+                "estimated": True,
+            },
         }), 200, {"Cache-Control": "no-store"}
 
     return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
