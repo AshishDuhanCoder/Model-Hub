@@ -39,6 +39,29 @@ const chatNewBtn = document.getElementById('chat-new-btn');
 let currentMode   = 'search';   // 'search' | 'ask'
 let contextTopic  = '';          // last resolved topic for follow-up awareness
 let typingEl      = null;        // current typing indicator node
+let tokenHistory  = [];
+
+function renderUsageCharts(usage) {
+  if (!usage) return;
+  tokenHistory.push({
+    prompt: Number(usage.prompt_tokens || 0),
+    answer: Number(usage.completion_tokens || 0),
+    total: Number(usage.total_tokens || 0),
+    estimated: Boolean(usage.estimated),
+  });
+  tokenHistory = tokenHistory.slice(-8);
+  const total = document.getElementById('usage-total');
+  const svg = document.getElementById('usage-sparkline');
+  const bars = document.getElementById('usage-bars');
+  const detail = document.getElementById('usage-detail');
+  if (!total || !svg || !bars) return;
+  total.textContent = `${tokenHistory.reduce((sum, item) => sum + item.total, 0)} tokens`;
+  const max = Math.max(1, ...tokenHistory.map(item => item.total));
+  const points = tokenHistory.map((item, index) => `${index * 24 + 6},${38 - (item.total / max) * 30}`).join(' ');
+  svg.innerHTML = `<polyline points="${points}" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  bars.innerHTML = tokenHistory.map((item, index) => `<span class="usage-bar" title="Call ${index + 1}: ${item.prompt} prompt + ${item.answer} answer tokens" style="height:${Math.max(5, (item.total / max) * 30)}px"><i style="height:${Math.max(2, (item.prompt / Math.max(1, item.total)) * 100)}%"></i></span>`).join('');
+  detail.textContent = `Latest call: ${tokenHistory.at(-1).prompt} prompt + ${tokenHistory.at(-1).answer} answer = ${tokenHistory.at(-1).total} tokens${tokenHistory.at(-1).estimated ? ' (estimated for DuckDuckGo)' : ''}`;
+}
 
 /* ============================================================
    API KEY MANAGEMENT  (stored in localStorage, sent as header)
@@ -204,7 +227,8 @@ function appendAiBubble(data) {
       ${data.description ? `<p class="chat-ai-desc">${escapeHtml(data.description)}</p>` : ''}
       ${bulletsHtml}
       ${footerHtml}
-    </div>`;
+    </div>
+    ${data.query ? `<button class="chat-regenerate-btn" type="button" data-regenerate-query="${escapeHtml(data.query)}" title="Regenerate Response" aria-label="Regenerate Response"><span aria-hidden="true">↻</span><span class="chat-regenerate-label">Regenerate Response</span></button>` : ''}`;
   chatMsgs.appendChild(wrap);
   scrollChatBottom();
 }
@@ -227,6 +251,15 @@ function clearChat() {
   });
   if (chatWelcome) chatWelcome.style.display = '';
   contextTopic = '';
+  tokenHistory = [];
+  const usageTotal = document.getElementById('usage-total');
+  const usageBars = document.getElementById('usage-bars');
+  const usageSparkline = document.getElementById('usage-sparkline');
+  const usageDetail = document.getElementById('usage-detail');
+  if (usageTotal) usageTotal.textContent = '0 tokens';
+  if (usageBars) usageBars.innerHTML = '';
+  if (usageSparkline) usageSparkline.innerHTML = '';
+  if (usageDetail) usageDetail.textContent = 'Ask a question to see prompt and answer tokens.';
 }
 
 if (chatNewBtn) chatNewBtn.addEventListener('click', clearChat);
@@ -263,9 +296,16 @@ async function submitAsk(q) {
     const res  = await fetch(`/api/ask?${params}`, { headers });
     const data = await res.json();
     if (!res.ok || data.error) {
-      appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
+      if (res.status === 401 && getUserKey()) {
+        const keyBar = document.getElementById('chat-key-bar');
+        if (keyBar) keyBar.classList.remove('hidden');
+        appendErrorBubble('Your saved API key was rejected. It was kept so you can replace it or remove it. DuckDuckGo will be used after you remove the key.');
+      } else {
+        appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
+      }
     } else {
       if (data.topic) contextTopic = data.topic;
+      renderUsageCharts(data.usage);
       appendAiBubble(data);
     }
   } catch {
@@ -279,6 +319,13 @@ if (askSendBtn) {
     if (heroSearch) submitAsk(heroSearch.value.trim());
   });
 }
+
+document.addEventListener('click', e => {
+  const regenerate = e.target.closest('.chat-regenerate-btn');
+  if (!regenerate) return;
+  const query = regenerate.dataset.regenerateQuery || '';
+  if (query) submitAsk(query);
+});
 
 // hideAskPanel shim — used by setMode search branch (now just hides chat window)
 function hideAskPanel() {

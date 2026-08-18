@@ -576,7 +576,7 @@ def _extract_json(raw: str) -> dict:
 
 
 def _ask_groq(question: str, context_topic: str = "", api_key: str = "") -> tuple:
-    """Returns (parsed_dict, model_name). Tries each model until one succeeds."""
+    """Returns (parsed_dict, model_name, usage). Tries each model until one succeeds."""
     api_key = api_key or _GROQ_KEY
     context_line = (
         f'This is a follow-up about "{context_topic}". '
@@ -611,8 +611,14 @@ def _ask_groq(question: str, context_topic: str = "", api_key: str = "") -> tupl
                 timeout=20,
             )
             resp.raise_for_status()
-            raw = resp.json()["choices"][0]["message"]["content"].strip()
-            return _extract_json(raw), model
+            payload = resp.json()
+            raw = payload["choices"][0]["message"]["content"].strip()
+            usage = payload.get("usage") or {}
+            return _extract_json(raw), model, {
+                "prompt_tokens": int(usage.get("prompt_tokens") or 0),
+                "completion_tokens": int(usage.get("completion_tokens") or 0),
+                "total_tokens": int(usage.get("total_tokens") or 0),
+            }
         except http_requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status in (429, 503):
@@ -746,7 +752,8 @@ def _fetch_duckduckgo_web(topic: str) -> dict:
 @app.route("/api/ask")
 def api_ask():
     """
-    Answer any question. Primary: Gemini 2.0 Flash. Fallback: Wikipedia.
+    Answer any question using the selected Ask provider.
+    A user key routes exclusively to the configured LLM; otherwise DuckDuckGo is used.
     Supports context_topic for multi-turn follow-up awareness.
     """
     q             = request.args.get("q", "").strip()
@@ -774,6 +781,39 @@ def api_ask():
     is_followup    = bool(context_topic and (len(q.split()) <= 3 or _FOLLOWUP.search(q)))
     resolved_topic = context_topic if is_followup else q
 
+    # A saved user key explicitly selects the LLM for this Ask session.
+    # Never silently switch to DuckDuckGo when a key was supplied.
+    user_key = request.headers.get("X-User-Key", "").strip()
+    if user_key:
+        try:
+            data, used_model, usage = _ask_groq(
+                q,
+                context_topic=context_topic if is_followup else "",
+                api_key=user_key,
+            )
+            bullets = data.get("bullets") or []
+            if bullets:
+                return jsonify({
+                    "query": q,
+                    "topic": resolved_topic,
+                    "title": data.get("title", q.title()),
+                    "description": data.get("description", ""),
+                    "bullets": bullets,
+                    "source": f"Your LLM key — {used_model.replace('-', ' ').title()}",
+                    "url": "",
+                    "usage": usage,
+                }), 200, {"Cache-Control": "no-store"}
+            return jsonify({"error": "The selected LLM returned an empty answer."}), 502
+        except http_requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else 0
+            if status == 401:
+                return jsonify({"error": "The saved LLM key is invalid or expired. Update it to continue."}), 401
+            return jsonify({"error": f"The selected LLM is unavailable (HTTP {status})."}), 502
+        except Exception as exc:
+            print(f"[Selected LLM error] {type(exc).__name__}: {exc}")
+            return jsonify({"error": "The selected LLM could not answer this question."}), 502
+
+    # No user key means DuckDuckGo is the free, keyless provider.
     # DuckDuckGo is intentionally the primary provider. It is free, keyless,
     # and ensures each question is searched independently instead of being
     # answered by a reused model response.
@@ -815,25 +855,13 @@ def api_ask():
             "bullets": result["bullets"],
             "source": result["source"],
             "url": result["url"],
+            "usage": {
+                "prompt_tokens": max(1, len(q.split()) * 2),
+                "completion_tokens": max(1, len((result.get("description") or "").split()) // 2),
+                "total_tokens": max(2, len(q.split()) * 2 + len((result.get("description") or "").split()) // 2),
+                "estimated": True,
+            },
         }), 200, {"Cache-Control": "no-store"}
-
-    # Optional Groq fallback only when both official DuckDuckGo endpoints fail.
-    active_key = request.headers.get("X-User-Key", "").strip() or _GROQ_KEY
-    if active_key:
-        try:
-            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "", api_key=active_key)
-            bullets = data.get("bullets") or []
-            if bullets:
-                return jsonify({
-                    "query": q, "topic": resolved_topic,
-                    "title": data.get("title", q.title()),
-                    "description": data.get("description", ""),
-                    "bullets": bullets,
-                    "source": f"Groq fallback — {used_model.replace('-', ' ').title()}",
-                    "url": "",
-                }), 200, {"Cache-Control": "no-store"}
-        except Exception as exc:
-            print(f"[Groq fallback error] {type(exc).__name__}: {exc}")
 
     return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
 
