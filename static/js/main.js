@@ -227,7 +227,8 @@ function appendAiBubble(data) {
       ${data.description ? `<p class="chat-ai-desc">${escapeHtml(data.description)}</p>` : ''}
       ${bulletsHtml}
       ${footerHtml}
-    </div>`;
+    </div>
+    ${data.query ? `<button class="chat-regenerate-btn" type="button" data-regenerate-query="${escapeHtml(data.query)}" title="Regenerate Response" aria-label="Regenerate Response"><span aria-hidden="true">↻</span><span class="chat-regenerate-label">Regenerate Response</span></button>` : ''}`;
   chatMsgs.appendChild(wrap);
   scrollChatBottom();
 }
@@ -296,15 +297,9 @@ async function submitAsk(q) {
     const data = await res.json();
     if (!res.ok || data.error) {
       if (res.status === 401 && getUserKey()) {
-        clearUserKey();
         const keyBar = document.getElementById('chat-key-bar');
-        const keyInput = document.getElementById('chat-key-input');
         if (keyBar) keyBar.classList.remove('hidden');
-        if (keyInput) {
-          keyInput.value = '';
-          keyInput.focus();
-        }
-        appendErrorBubble('Your saved API key is invalid or expired. It was removed. Enter a new key to continue, or leave it empty to use DuckDuckGo.');
+        appendErrorBubble('Your saved API key was rejected. It was kept so you can replace it or remove it. DuckDuckGo will be used after you remove the key.');
       } else {
         appendErrorBubble(data.error || 'No answer found. Try rephrasing your question.');
       }
@@ -324,6 +319,13 @@ if (askSendBtn) {
     if (heroSearch) submitAsk(heroSearch.value.trim());
   });
 }
+
+document.addEventListener('click', e => {
+  const regenerate = e.target.closest('.chat-regenerate-btn');
+  if (!regenerate) return;
+  const query = regenerate.dataset.regenerateQuery || '';
+  if (query) submitAsk(query);
+});
 
 // hideAskPanel shim — used by setMode search branch (now just hides chat window)
 function hideAskPanel() {
