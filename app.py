@@ -746,7 +746,8 @@ def _fetch_duckduckgo_web(topic: str) -> dict:
 @app.route("/api/ask")
 def api_ask():
     """
-    Answer any question. Primary: Gemini 2.0 Flash. Fallback: Wikipedia.
+    Answer any question using the selected Ask provider.
+    A user key routes exclusively to the configured LLM; otherwise DuckDuckGo is used.
     Supports context_topic for multi-turn follow-up awareness.
     """
     q             = request.args.get("q", "").strip()
@@ -774,6 +775,38 @@ def api_ask():
     is_followup    = bool(context_topic and (len(q.split()) <= 3 or _FOLLOWUP.search(q)))
     resolved_topic = context_topic if is_followup else q
 
+    # A saved user key explicitly selects the LLM for this Ask session.
+    # Never silently switch to DuckDuckGo when a key was supplied.
+    user_key = request.headers.get("X-User-Key", "").strip()
+    if user_key:
+        try:
+            data, used_model = _ask_groq(
+                q,
+                context_topic=context_topic if is_followup else "",
+                api_key=user_key,
+            )
+            bullets = data.get("bullets") or []
+            if bullets:
+                return jsonify({
+                    "query": q,
+                    "topic": resolved_topic,
+                    "title": data.get("title", q.title()),
+                    "description": data.get("description", ""),
+                    "bullets": bullets,
+                    "source": f"Your LLM key — {used_model.replace('-', ' ').title()}",
+                    "url": "",
+                }), 200, {"Cache-Control": "no-store"}
+            return jsonify({"error": "The selected LLM returned an empty answer."}), 502
+        except http_requests.HTTPError as exc:
+            status = exc.response.status_code if exc.response is not None else 0
+            if status == 401:
+                return jsonify({"error": "The saved LLM key is invalid or expired. Update it to continue."}), 401
+            return jsonify({"error": f"The selected LLM is unavailable (HTTP {status})."}), 502
+        except Exception as exc:
+            print(f"[Selected LLM error] {type(exc).__name__}: {exc}")
+            return jsonify({"error": "The selected LLM could not answer this question."}), 502
+
+    # No user key means DuckDuckGo is the free, keyless provider.
     # DuckDuckGo is intentionally the primary provider. It is free, keyless,
     # and ensures each question is searched independently instead of being
     # answered by a reused model response.
@@ -816,24 +849,6 @@ def api_ask():
             "source": result["source"],
             "url": result["url"],
         }), 200, {"Cache-Control": "no-store"}
-
-    # Optional Groq fallback only when both official DuckDuckGo endpoints fail.
-    active_key = request.headers.get("X-User-Key", "").strip() or _GROQ_KEY
-    if active_key:
-        try:
-            data, used_model = _ask_groq(q, context_topic=context_topic if is_followup else "", api_key=active_key)
-            bullets = data.get("bullets") or []
-            if bullets:
-                return jsonify({
-                    "query": q, "topic": resolved_topic,
-                    "title": data.get("title", q.title()),
-                    "description": data.get("description", ""),
-                    "bullets": bullets,
-                    "source": f"Groq fallback — {used_model.replace('-', ' ').title()}",
-                    "url": "",
-                }), 200, {"Cache-Control": "no-store"}
-        except Exception as exc:
-            print(f"[Groq fallback error] {type(exc).__name__}: {exc}")
 
     return jsonify({"error": f'No results found for "{q}". Try rephrasing.'}), 404
 
